@@ -1,0 +1,302 @@
+// ─────────────────────────────────────────────────────────────
+// PRISMA SCHEMA - Aligné avec schema.sql PostgreSQL
+// ─────────────────────────────────────────────────────────────
+// Ce schéma génère le client Prisma pour Next.js
+// Les tables sont créées via schema.sql (migrations manuelles)
+// Prisma ne fait que le mapping TypeScript
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────
+enum ClientStatus {
+  actif
+  inactif
+  suspendu
+}
+
+enum MarcheStatus {
+  nouveau
+  qualifie
+  dossier_genere
+  depose
+  gagne
+  perdu
+  annule
+}
+
+enum QualificationDecision {
+  GO
+  CONDITIONNEL
+  NO_GO
+}
+
+enum InvoiceStatus {
+  emise
+  payee
+  en_retard
+  annulee
+}
+
+enum ConformityStatus {
+  valide
+  expire_soon
+  expire
+  manquant
+}
+
+enum PartnerType {
+  expert_comptable
+  avocat
+  cci
+  autre
+}
+
+enum PartnerStatus {
+  actif
+  inactif
+}
+
+// ─────────────────────────────────────────────────────────────
+// MODÈLES PRINCIPAUX
+// ─────────────────────────────────────────────────────────────
+
+model Client {
+  id                    String       @id @default(uuid())
+  companyName           String       @map("company_name")
+  legalForm             String?      @map("legal_form")
+  capitalSocial         BigInt?      @map("capital_social")
+  rcmNumber             String?      @unique @map("rcm_number")
+  ifuNumber             String?      @unique @map("ifu_number")
+  cnpsNumber            String?      @map("cnps_number")
+  taxCenter             String?      @map("tax_center")
+  address               String
+  phone                 String?
+  email                 String
+  website               String?
+  representativeName    String?      @map("representative_name")
+  representativeTitle   String?      @map("representative_title")
+  representativeIdNumber String?     @map("representative_id_number")
+  sector                String?
+  staffCount            Int?         @default(0) @map("staff_count")
+  techStaffCount        Int?         @default(0) @map("tech_staff_count")
+  ca3Years              BigInt[]     @default([]) @map("ca_3_years")
+  ownFunds              BigInt?      @default(0) @map("own_funds")
+  creditLines           BigInt?      @default(0) @map("credit_lines")
+  references            Json?        @default("[]")
+  keyStaff              Json?        @default("[]") @map("key_staff")
+  equipment             Json?        @default("[]")
+  certifications        Json?        @default("[]")
+  status                ClientStatus @default(actif)
+  onboardedAt           DateTime?    @map("onboarded_at")
+  createdAt             DateTime     @default(now()) @map("created_at")
+  updatedAt             DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  marches               Marche[]
+  qualifications        Qualification[]
+  invoices              Invoice[]
+  conformityTracking    ConformityTracking[]
+
+  @@index([rcmNumber])
+  @@index([ifuNumber])
+  @@index([sector])
+  @@index([status])
+  @@map("clients")
+}
+
+model Marche {
+  id                String       @id @default(uuid())
+  source            String
+  title             String
+  reference         String?
+  deadline          DateTime?
+  amount            String?
+  category          String?
+  link              String?
+  detectedAt        DateTime     @map("detected_at")
+  parsedAmount      BigInt?      @map("parsed_amount")
+  parsedDeadline    DateTime?    @map("parsed_deadline")
+  score             Int          @default(0)
+  status            MarcheStatus @default(nouveau)
+  resultDate        DateTime?    @map("result_date")
+  resultAmount      BigInt?      @map("result_amount")
+  resultNotes       String?      @map("result_notes")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  clientId          String?      @map("client_id")
+  client            Client?      @relation(fields: [clientId], references: [id])
+  qualification     Qualification?
+  qualificationId   String?      @unique @map("qualification_id")
+
+  @@index([source])
+  @@index([status])
+  @@index([parsedDeadline])
+  @@index([score])
+  @@index([clientId])
+  @@map("marches_detectes")
+}
+
+model Qualification {
+  id                String               @id @default(uuid())
+  marcheId          String               @unique @map("marche_id")
+  clientId          String               @map("client_id")
+  checklistJson     Json                 @map("checklist_json")
+  completionRate    Float?               @map("completion_rate")
+  criticalMissing   Int?
+  decision          QualificationDecision
+  decisionReason    String?              @map("decision_reason")
+  qualifiedAt       DateTime             @map("qualified_at")
+  createdAt         DateTime             @default(now()) @map("created_at")
+
+  // Relations
+  marche            Marche               @relation(fields: [marcheId], references: [id])
+  client            Client               @relation(fields: [clientId], references: [id])
+
+  @@index([marcheId])
+  @@index([clientId])
+  @@index([decision])
+  @@map("qualifications")
+}
+
+model Invoice {
+  id                String         @id @default(uuid())
+  number            String         @unique
+  date              DateTime
+  dueDate           DateTime       @map("due_date")
+  clientId          String         @map("client_id")
+  clientName        String         @map("client_name")
+  marcheReference   String?        @map("marche_reference")
+  marcheTitle       String?        @map("marche_title")
+  marcheAmount      BigInt?        @map("marche_amount")
+  feeRate           Float          @default(1.0) @map("fee_rate")
+  feeAmount         BigInt         @map("fee_amount")
+  status            InvoiceStatus  @default(emise)
+  description       String?
+  paidAt            DateTime?      @map("paid_at")
+  paymentMethod     String?        @map("payment_method")
+  paymentRef        String?        @map("payment_ref")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  client            Client         @relation(fields: [clientId], references: [id])
+
+  @@index([clientId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([number])
+  @@map("invoices")
+}
+
+model ConformityTracking {
+  id              String            @id @default(uuid())
+  clientId        String            @map("client_id")
+  documentType    String            @map("document_type")
+  status          ConformityStatus  @default(valide)
+  issueDate       DateTime?         @map("issue_date")
+  expiryDate      DateTime?         @map("expiry_date")
+  documentRef     String?           @map("document_ref")
+  filePath        String?           @map("file_path")
+  alertSent       Boolean           @default(false) @map("alert_sent")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  client          Client            @relation(fields: [clientId], references: [id])
+
+  @@unique([clientId, documentType])
+  @@index([clientId])
+  @@index([expiryDate])
+  @@index([status])
+  @@map("conformity_tracking")
+}
+
+model PartnerCommission {
+  id                 String        @id @default(uuid())
+  partnerName        String        @map("partner_name")
+  partnerType        PartnerType   @map("partner_type")
+  partnerContact     String?       @map("partner_contact")
+  commissionRate     Float         @default(10.0) @map("commission_rate")
+  status             PartnerStatus @default(actif)
+  contractSignedAt   DateTime?     @map("contract_signed_at")
+  createdAt          DateTime      @default(now()) @map("created_at")
+
+  @@index([partnerType])
+  @@index([status])
+  @@map("partner_commissions")
+}
+
+// ─────────────────────────────────────────────────────────────
+// MODÈLES AUTH (NextAuth.js)
+// ─────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(uuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime? @map("email_verified")
+  image         String?
+  passwordHash  String?   @map("password_hash")
+  role          String    @default("client") // client, admin, partner
+  clientId      String?   @unique @map("client_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  client        Client?   @relation(fields: [clientId], references: [id])
+  accounts      Account[]
+  sessions      Session[]
+  verificationTokens VerificationToken[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}

@@ -1,0 +1,256 @@
+version: '3.8'
+
+services:
+  # ─────────────────────────────────────────────────────────────
+  # BASE DE DONNÉES UNIQUE (Partagée n8n + Next.js + Metabase)
+  # ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: marches-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: marches_publics
+      POSTGRES_USER: marches_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U marches_user -d marches_publics"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - marches-net
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  # ─────────────────────────────────────────────────────────────
+  # N8N - Moteur d'automatisation (5 workflows)
+  # ─────────────────────────────────────────────────────────────
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: marches-n8n
+    restart: unless-stopped
+    environment:
+      # Base
+      N8N_HOST: ${N8N_HOST}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: https
+      WEBHOOK_URL: https://${N8N_HOST}/
+      GENERIC_TIMEZONE: Africa/Lome
+      
+      # Database (PostgreSQL externe)
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: marches_publics
+      DB_POSTGRESDB_USER: marches_user
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD}
+      
+      # Sécurité
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+      
+      # Performance
+      EXECUTIONS_MODE: queue
+      QUEUE_BULL_REDIS_HOST: redis
+      QUEUE_BULL_REDIS_PORT: 6379
+      N8N_CONCURRENCY: 10
+      
+      # Templates Docx (volume partagé)
+      N8N_TEMPLATES_DIR: /templates
+      
+      # Logs
+      N8N_LOG_LEVEL: info
+      N8N_LOG_OUTPUT: console
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./templates-docx:/templates:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - marches-net
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  # ─────────────────────────────────────────────────────────────
+  # REDIS - Queue n8n (executions asynchrones)
+  # ─────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: marches-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - marches-net
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # ─────────────────────────────────────────────────────────────
+  # NEXT.JS - Web App Clients (Inscription, Onboarding, Dashboard)
+  # ─────────────────────────────────────────────────────────────
+  webapp:
+    build:
+      context: ./webapp
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://${WEBAPP_HOST}
+        N8N_WEBHOOK_BASE: https://${N8N_HOST}
+    container_name: marches-webapp
+    restart: unless-stopped
+    environment:
+      # Database
+      DATABASE_URL: postgresql://marches_user:${POSTGRES_PASSWORD}@postgres:5432/marches_publics?schema=public
+      DIRECT_URL: postgresql://marches_user:${POSTGRES_PASSWORD}@postgres:5432/marches_publics?schema=public
+      
+      # Auth (NextAuth.js)
+      NEXTAUTH_URL: https://${WEBAPP_HOST}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      
+      # Email (Magic links / Notifications)
+      EMAIL_SERVER_HOST: ${SMTP_HOST}
+      EMAIL_SERVER_PORT: ${SMTP_PORT}
+      EMAIL_SERVER_USER: ${SMTP_USER}
+      EMAIL_SERVER_PASSWORD: ${SMTP_PASSWORD}
+      EMAIL_FROM: ${EMAIL_FROM}
+      
+      # n8n Webhooks (appel depuis webapp)
+      N8N_WEBHOOK_QUALIFY: https://${N8N_HOST}/webhook/qualify-marche
+      N8N_WEBHOOK_GENERATE: https://${N8N_HOST}/webhook/generate-dossier
+      N8N_WEBHOOK_RESULT: https://${N8N_HOST}/webhook/declare-result
+      
+      # App
+      NEXT_PUBLIC_APP_NAME: "Marchés Publics Partner"
+      NEXT_PUBLIC_APP_URL: https://${WEBAPP_HOST}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - marches-net
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  # ─────────────────────────────────────────────────────────────
+  # METABASE - Dashboard Analytics
+  # ─────────────────────────────────────────────────────────────
+  metabase:
+    image: metabase/metabase:v0.50
+    container_name: marches-metabase
+    restart: unless-stopped
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_DBNAME: marches_publics
+      MB_DB_PORT: 5432
+      MB_DB_USER: marches_user
+      MB_DB_PASS: ${POSTGRES_PASSWORD}
+      MB_DB_HOST: postgres
+      MB_ENCRYPTION_SECRET_KEY: ${METABASE_ENCRYPTION_KEY}
+      JAVA_TIMEZONE: Africa/Lome
+    volumes:
+      - metabase_data:/metabase-data
+      - ./metabase/dashboard.json:/metabase-data/initial-dashboard.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - marches-net
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  # ─────────────────────────────────────────────────────────────
+  # CADDY - Reverse Proxy + SSL Auto (Let's Encrypt)
+  # ─────────────────────────────────────────────────────────────
+  caddy:
+    image: caddy:2-alpine
+    container_name: marches-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      DOMAIN: ${DOMAIN}
+      N8N_HOST: ${N8N_HOST}
+      WEBAPP_HOST: ${WEBAPP_HOST}
+      METABASE_HOST: ${METABASE_HOST}
+    networks:
+      - marches-net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 64M
+
+  # ─────────────────────────────────────────────────────────────
+  # WATCHTOWER - Mises à jour auto images (optionnel)
+  # ─────────────────────────────────────────────────────────────
+  watchtower:
+    image: containrrr/watchtower
+    container_name: marches-watchtower
+    restart: unless-stopped
+    environment:
+      WATCHTOWER_CLEANUP: "true"
+      WATCHTOWER_POLL_INTERVAL: 86400
+      WATCHTOWER_INCLUDE_STOPPED: "true"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - marches-net
+
+networks:
+  marches-net:
+    driver: bridge
+    name: marches-net
+
+volumes:
+  postgres_data:
+    name: marches-postgres-data
+  n8n_data:
+    name: marches-n8n-data
+  redis_data:
+    name: marches-redis-data
+  metabase_data:
+    name: marches-metabase-data
+  caddy_data:
+    name: marches-caddy-data
+  caddy_config:
+    name: marches-caddy-config

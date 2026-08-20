@@ -1,0 +1,85 @@
+{
+    $DOMAIN = os.getenv('DOMAIN', 'marches-partner.tg')
+    $N8N_HOST = os.getenv('N8N_HOST', 'n8n.' + $DOMAIN)
+    $WEBAPP_HOST = os.getenv('WEBAPP_HOST', 'app.' + $DOMAIN)
+    $METABASE_HOST = os.getenv('METABASE_HOST', 'metabase.' + $DOMAIN)
+}
+
+# Global config
+{
+    email omaralaka7@gmail.com
+    admin off
+    https_port 443
+    http_port 80
+}
+
+# ─────────────────────────────────────────────────────────────
+# N8N - Interface d'automatisation (protégée Basic Auth)
+# ─────────────────────────────────────────────────────────────
+{$N8N_HOST} {
+    reverse_proxy n8n:5678 {
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+    }
+    
+    # WebSocket support pour n8n
+    @websocket {
+        header Connection *Upgrade*
+        header Upgrade websocket
+    }
+    reverse_proxy @websocket n8n:5678 {
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+        header_up Upgrade {http.request.header.Upgrade}
+        header_up Connection {http.request.header.Connection}
+    }
+}
+
+# ─────────────────────────────────────────────────────────────
+# WEBAPP - Interface Clients (Publique + Auth)
+# ─────────────────────────────────────────────────────────────
+{$WEBAPP_HOST} {
+    reverse_proxy webapp:3000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+    }
+    
+    # Headers sécurité
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    }
+}
+
+# ─────────────────────────────────────────────────────────────
+# METABASE - Dashboard (Protégé - IP whitelist ou Basic Auth)
+# ─────────────────────────────────────────────────────────────
+{$METABASE_HOST} {
+    # Option A : Basic Auth (simple)
+    basicauth {
+        {env.METABASE_ADMIN_USER} {env.METABASE_ADMIN_PASSWORD}
+    }
+    
+    reverse_proxy metabase:3000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}
+
+# ─────────────────────────────────────────────────────────────
+# HEALTH CHECK ENDPOINT (pour monitoring externe)
+# ─────────────────────────────────────────────────────────────
+health.{$DOMAIN} {
+    respond "OK" 200
+}
