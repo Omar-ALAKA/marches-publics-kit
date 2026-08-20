@@ -1,0 +1,35 @@
+[En-tête : VOTRE SOCIÉTÉ - FACTURE N° {{number}}]
+
+FACTURE DE SUCCESS FEE - MARCHÉS PUBLICS
+
+Date d'émission : {{date}}
+Date d'échéance : {{dueDate}}
+
+CLIENT :
+{{clientName}}
+{{client_address || ''}}
+
+OBJET : Success Fee - Marché {{marcheReference}}
+
+DÉTAIL :
+{{description}}
+
+Montant du marché attribué : {{marcheAmount}} FCFA
+Taux de success fee : {{feeRate}}%
+Montant HT : {{feeAmount}} FCFA
+
+TVA : Non applicable (Art. 293B CGI) / Selon régime client
+
+TOTAL TTC : {{feeAmount}} FCFA
+
+MODE DE RÈGLEMENT :
+- Virement bancaire : [Vos coordonnées bancaires]
+- Mobile Money : [Votre numéro Wave/MoMo/Orange Money]
+- Espèces contre reçu
+
+Échéance : {{dueDate}}
+Pénalités de retard : 3x taux directeur BCEAO + 10 000 FCFA frais fixes
+
+Merci de votre confiance.
+
+[Cachet + Signature]

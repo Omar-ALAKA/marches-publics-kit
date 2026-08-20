@@ -1,0 +1,200 @@
+{
+  "name": "Marchés Publics - Pipeline & Revenus",
+  "description": "Dashboard principal pour suivre la veille, qualification, dossiers, gains et revenus",
+  "parameters": [
+    {
+      "id": "date_range",
+      "name": "Période",
+      "type": "date",
+      "default": "last_30_days"
+    }
+  ],
+  "cards": [
+    {
+      "name": "🎯 Marchés Détectés (7j)",
+      "dataset_query": {
+        "database": 1,
+        "type": "query",
+        "query": {
+          "source-table": "v_pipeline_marches",
+          "aggregation": [["count", "id"]],
+          "filter": [["detected_at", ">=", "{{date_range.start}}"]]
+        }
+      },
+      "display": "scalar",
+      "visualization_settings": {
+        "scalar.color": "#10B981"
+      }
+    },
+    {
+      "name": "💰 Revenus Success Fee (Mois en cours)",
+      "dataset_query": {
+        "database": 1,
+        "type": "query",
+        "query": {
+          "source-table": "v_revenus",
+          "aggregation": [["sum", "total_facture"]],
+          "filter": [["mois", "=", "{{date_range.this_month}}"]]
+        }
+      },
+      "display": "scalar",
+      "visualization_settings": {
+        "scalar.prefix": "FCFA ",
+        "scalar.color": "#F59E0B"
+      }
+    },
+    {
+      "name": "📊 Taux de Gain (%)",
+      "dataset_query": {
+        "database": 1,
+        "type": "query",
+        "query": {
+          "source-table": "v_pipeline_marches",
+          "aggregation": [
+            ["count", "id", "total"],
+            ["countif", "status = 'gagne'", "gagnes"]
+          ]
+        }
+      },
+      "display": "scalar",
+      "visualization_settings": {
+        "scalar.suffix": " %",
+        "scalar.color": "#3B82F6"
+      }
+    },
+    {
+      "name": "⏳ Marchés à Échéance ≤ 7j",
+      "dataset_query": {
+        "database": 1,
+        "type": "query",
+        "query": {
+          "source-table": "v_pipeline_marches",
+          "aggregation": [["count", "id"]],
+          "filter": [["days_until_deadline", "<=", 7], ["days_until_deadline", ">=", 0]]
+        }
+      },
+      "display": "scalar",
+      "visualization_settings": {
+        "scalar.color": "#EF4444"
+      }
+    },
+    {
+      "name": "Pipeline par Statut",
+      "dataset_query": {
+        "database": 1,
+        "type": "query",
+        "query": {
+          "source-table": "v_pipeline_marches",
+          "breakout": ["status"],
+          "aggregation": [["count", "id"]]
+        }
+      },
+      "display": "bar",
+      "visualization_settings": {
+        "graph.dimensions": ["status"],
+        "graph.metrics": ["count"],
+        "series.color": "#3B82F6"
+      }
+    },
+    {
+      "name": "Top 10 Marchés par Score",
+      "dataset_query": {
+        "database": 1,
+        "type": "query",
+        "query": {
+          "source-table": "v_pipeline_marches",
+          "breakout": ["title", "score", "parsed_amount", "parsed_deadline", "client_name", "status"],
+          "aggregation": [],
+          "order-by": [["score", "desc"]],
+          "limit": 10
+        }
+      },
+      "display": "table",
+      "visualization_settings": {
+        "table.show_column_titles": true,
+        "table.cell_formatting": {
+          "parsed_amount": {"style": "currency", "currency": "XOF"}
+        }
+      }
+    },
+    {
+      "name": "Répartition par Source",
+      "dataset_query": {
+        "database": 1,
+        "type": "query",
+        "query": {
+          "source-table": "v_pipeline_marches",
+          "breakout": ["source"],
+          "aggregation": [["count", "id"], ["avg", "score"]]
+        }
+      },
+      "display": "pie",
+      "visualization_settings": {}
+    },
+    {
+      "name": "Revenus Mensuels (12 derniers mois)",
+      "dataset_query": {
+        "database": 1,
+        "type": "query",
+        "query": {
+          "source-table": "v_revenus",
+          "breakout": ["mois"],
+          "aggregation": [
+            ["sum", "total_facture", "Facturé"],
+            ["sum", "total_encaisse", "Encaissé"],
+            ["sum", "total_en_attente", "En attente"]
+          ],
+          "order-by": [["mois", "asc"]]
+        }
+      },
+      "display": "line",
+      "visualization_settings": {
+        "graph.dimensions": ["mois"],
+        "graph.metrics": ["Facturé", "Encaissé", "En attente"],
+        "series.Facturé.color": "#6B7280",
+        "series.Encaissé.color": "#10B981",
+        "series.En attente.color": "#F59E0B"
+      }
+    },
+    {
+      "name": "Performance par Client",
+      "dataset_query": {
+        "database": 1,
+        "type": "query",
+        "query": {
+          "source-table": "v_client_performance",
+          "breakout": ["company_name", "sector", "marches_gagnes", "ca_gagne", "fees_gagnes"],
+          "aggregation": [],
+          "order-by": [["fees_gagnes", "desc"]],
+          "limit": 20
+        }
+      },
+      "display": "table",
+      "visualization_settings": {
+        "table.cell_formatting": {
+          "ca_gagne": {"style": "currency", "currency": "XOF"},
+          "fees_gagnes": {"style": "currency", "currency": "XOF"}
+        }
+      }
+    },
+    {
+      "name": "Alertes Conformité (Expiration ≤ 30j)",
+      "dataset_query": {
+        "database": 1,
+        "type": "query",
+        "query": {
+          "source-table": "v_conformity_alerts",
+          "breakout": ["company_name", "document_type", "status", "expiry_date", "days_until_expiry", "email", "phone"],
+          "aggregation": [],
+          "order-by": [["days_until_expiry", "asc"]]
+        }
+      },
+      "display": "table",
+      "visualization_settings": {
+        "table.cell_formatting": {
+          "days_until_expiry": {"style": "number"}
+        }
+      }
+    }
+  ]
+}

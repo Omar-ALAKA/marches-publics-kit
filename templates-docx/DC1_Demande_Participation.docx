@@ -1,0 +1,27 @@
+[En-tête : Logo Client + "DEMANDE DE PARTICIPATION"]
+
+Objet : Demande de participation à l'appel d'offres N° {{marche_reference}}
+
+Monsieur le Président de la Commission d'Appel d'Offres,
+
+{{client_name}}, société de droit {{client_legal_form}} au capital de {{client_capital}}, 
+immatriculée au RCCM sous le numéro {{client_rcm}}, identifiée à l'IFU {{client_ifu}},
+dont le siège social est sis à {{client_address}},
+représentée par {{rep_name}}, en sa qualité de {{rep_title}},
+
+A l'honneur de solliciter sa participation à l'appel d'offres {{marche_reference}} 
+intitulé « {{marche_title}} » pour un montant estimé à {{marche_amount}}.
+
+Notre société dispose des capacités techniques, financières et humaines requises 
+pour l'exécution de ce marché dans les délais impartis.
+
+Nous nous engageons à respecter l'ensemble des clauses du dossier d'appel d'offres 
+et à fournir les garanties exigées.
+
+En foi de quoi, la présente demande est établie pour servir et valoir ce que de droit.
+
+Fait à {{client_address}}, le {{date_jour}}
+
+{{rep_name}}
+{{rep_title}}
+[Cachet + Signature]

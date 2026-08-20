@@ -1,0 +1,22 @@
+[En-tête : {{client_name}} - DEMANDE D'ATTESTATION CNPS]
+
+À l'attention de la Caisse Nationale de Prévoyance Sociale
+Direction des Recouvrements / Attestations
+
+Objet : Demande d'attestation de régularité pour appel d'offres {{marche_reference}}
+
+Monsieur le Directeur,
+
+La société {{client_name}}, immatriculée à la CNPS sous le numéro {{client_cnps_number}},
+solicite la délivrance d'une attestation de régularité de paiement des cotisations 
+sociales en vue de sa participation à l'appel d'offres N° {{marche_reference}}.
+
+Cette attestation est requise dans le cadre de la constitution du dossier de candidature.
+
+Nous vous prions d'agréer, Monsieur le Directeur, l'expression de nos salutations distinguées.
+
+Fait à {{client_address}}, le {{date_jour}}
+
+{{rep_name}}
+{{rep_title}}
+[Cachet société]

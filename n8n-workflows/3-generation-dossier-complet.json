@@ -1,0 +1,227 @@
+{
+  "name": "Génération Dossier Complet Appel d'Offres",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-dossier",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook Génération (bouton 'Générer')",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "marches_detectes m\nJOIN qualifications q ON q.marche_id = m.id\nJOIN clients c ON c.id = q.client_id",
+        "columns": ["m.*", "q.*", "c.*"],
+        "options": {
+          "where": "m.id = {{ $json.marche_id }}"
+        }
+      },
+      "id": "2",
+      "name": "Charger Données Complètes",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.1,
+      "position": [500, 300],
+      "credentials": { "postgres": "Proxmox Postgres" }
+    },
+    {
+      "parameters": {
+        "functionCode": "const data = items[0].json;\nconst marche = data;\nconst client = data;\nconst qualification = data;\n\n// ==========================================\n// DONNÉES POUR TEMPLATES DOCXTEMPLATER\n// ==========================================\nconst today = new Date();\nconst deadline = new Date(marche.parsedDeadline);\nconst daysLeft = Math.ceil((deadline - today) / (1000*60*60*24));\n\nconst templateData = {\n  // --- Marché ---\n  marche_reference: marche.reference,\n  marche_title: marche.title,\n  marche_amount: marche.parsedAmount.toLocaleString('fr-FR') + ' FCFA',\n  marche_deadline: deadline.toLocaleDateString('fr-FR'),\n  marche_days_left: daysLeft,\n  marche_category: marche.category,\n  marche_source: marche.source,\n  marche_link: marche.link,\n  \n  // --- Client / Soumissionnaire ---\n  client_name: client.company_name,\n  client_rcm: client.rcm_number,\n  client_ifu: client.ifu_number,\n  client_address: client.address,\n  client_phone: client.phone,\n  client_email: client.email,\n  client_legal_form: client.legal_form,\n  client_capital: client.capital_social?.toLocaleString('fr-FR') + ' FCFA',\n  client_representative: client.representative_name,\n  client_rep_title: client.representative_title,\n  \n  // --- Capacités ---\n  client_ca_3ans: client.ca_3_years?.map((y, i) => `${2024-i}: ${y.toLocaleString('fr-FR')} FCFA`).join(' | '),\n  client_effectif: client.staff_count,\n  client_tech_staff: client.tech_staff_count,\n  client_refs: client.references?.map(r => `\n    • ${r.year} - ${r.client} - ${r.description} - ${r.amount.toLocaleString('fr-FR')} FCFA`).join('') || 'À compléter',\n  \n  // --- Pièces Administratives (status) ---\n  piece_rccm: qualification.checklist_json?.find(c => c.id === 'RCCM')?.status === 'ok' ? '✅ Fourni' : '❌ MANQUANT',\n  piece_ifu: qualification.checklist_json?.find(c => c.id === 'IFU')?.status === 'ok' ? '✅ Fourni' : '❌ MANQUANT',\n  piece_cnps: qualification.checklist_json?.find(c => c.id === 'CNPS')?.status === 'ok' ? '✅ Fourni' : '❌ MANQUANT',\n  piece_impots: qualification.checklist_json?.find(c => c.id === 'IMPOTS')?.status === 'ok' ? '✅ Fourni' : '❌ MANQUANT',\n  piece_licence: qualification.checklist_json?.find(c => c.id === 'LICENCE')?.status === 'ok' ? '✅ Fourni' : '❌ MANQUANT',\n  piece_assurance: qualification.checklist_json?.find(c => c.id === 'ASSURANCE')?.status === 'ok' ? '✅ Fourni' : '❌ MANQUANT',\n  \n  // --- Calculs Financiers (Bordereau Prix) ---\n  estimated_direct_cost: (marche.parsedAmount * 0.65).toLocaleString('fr-FR'),\n  estimated_overhead: (marche.parsedAmount * 0.15).toLocaleString('fr-FR'),\n  estimated_margin: (marche.parsedAmount * 0.20).toLocaleString('fr-FR'),\n  \n  // --- Dates ---\n  date_jour: today.toLocaleDateString('fr-FR'),\n  date_depot_limite: deadline.toLocaleDateString('fr-FR'),\n  \n  // --- Signatures ---\n  rep_name: client.representative_name,\n  rep_title: client.representative_title\n};\n\nreturn [{json: templateData}];"
+      },
+      "id": "3",
+      "name": "Préparer Données Templates",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "generate",
+        "template": "templates/DC1_Demande_Participation.docx",
+        "outputFileName": "DC1_{{ $json.marche_reference }}_{{ $json.client_name }}.docx",
+        "data": "={{ $json }}"
+      },
+      "id": "4",
+      "name": "Générer DC1 - Demande Participation",
+      "type": "n8n-nodes-base.docxtemplater",
+      "typeVersion": 1,
+      "position": [1000, 150]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "generate",
+        "template": "templates/DC2_Declaration_Sur_Honneur.docx",
+        "outputFileName": "DC2_{{ $json.marche_reference }}_{{ $json.client_name }}.docx",
+        "data": "={{ $json }}"
+      },
+      "id": "5",
+      "name": "Générer DC2 - Déclaration Sur Honneur",
+      "type": "n8n-nodes-base.docxtemplater",
+      "typeVersion": 1,
+      "position": [1000, 250]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "generate",
+        "template": "templates/Bordereau_Prix_Unitaire.docx",
+        "outputFileName": "BPU_{{ $json.marche_reference }}_{{ $json.client_name }}.docx",
+        "data": "={{ $json }}"
+      },
+      "id": "6",
+      "name": "Générer BPU - Bordereau Prix Unitaires",
+      "type": "n8n-nodes-base.docxtemplater",
+      "typeVersion": 1,
+      "position": [1000, 350]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "generate",
+        "template": "templates/Memoire_Technique.docx",
+        "outputFileName": "MT_{{ $json.marche_reference }}_{{ $json.client_name }}.docx",
+        "data": "={{ $json }}"
+      },
+      "id": "7",
+      "name": "Générer Mémoire Technique",
+      "type": "n8n-nodes-base.docxtemplater",
+      "typeVersion": 1,
+      "position": [1000, 450]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "generate",
+        "template": "templates/Capacites_Techniques_Financieres.docx",
+        "outputFileName": "CTF_{{ $json.marche_reference }}_{{ $json.client_name }}.docx",
+        "data": "={{ $json }}"
+      },
+      "id": "8",
+      "name": "Générer Capacités Tech/Fin",
+      "type": "n8n-nodes-base.docxtemplater",
+      "typeVersion": 1,
+      "position": [1000, 550]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "generate",
+        "template": "templates/Attestation_CNPS.docx",
+        "outputFileName": "ATT_CNPS_{{ $json.marche_reference }}_{{ $json.client_name }}.docx",
+        "data": "={{ $json }}"
+      },
+      "id": "9",
+      "name": "Générer Attestation CNPS (modèle demande)",
+      "type": "n8n-nodes-base.docxtemplater",
+      "typeVersion": 1,
+      "position": [1000, 650]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "generate",
+        "template": "templates/Attestation_Fiscale.docx",
+        "outputFileName": "ATT_FISC_{{ $json.marche_reference }}_{{ $json.client_name }}.docx",
+        "data": "={{ $json }}"
+      },
+      "id": "10",
+      "name": "Générer Attestation Fiscale (modèle demande)",
+      "type": "n8n-nodes-base.docxtemplater",
+      "typeVersion": 1,
+      "position": [1000, 750]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "generate",
+        "template": "templates/Lettre_Soumission.docx",
+        "outputFileName": "LETTRE_{{ $json.marche_reference }}_{{ $json.client_name }}.docx",
+        "data": "={{ $json }}"
+      },
+      "id": "11",
+      "name": "Générer Lettre Soumission",
+      "type": "n8n-nodes-base.docxtemplater",
+      "typeVersion": 1,
+      "position": [1000, 850]
+    },
+    {
+      "parameters": {
+        "functionCode": "const files = items.map((item, i) => ({\n  name: item.json.fileName || `doc_${i}.docx`,\n  data: item.binary?.data || item.binary?.file\n}));\n\n// Créer ZIP (nécessite nodeJS zip ou commande shell)\n// Ici on retourne juste les fichiers individuels\nreturn files.map(f => ({json: {fileName: f.name, base64: f.data}}));"
+      },
+      "id": "12",
+      "name": "Consolider Fichiers",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1250, 500]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $credentials.telegramBot.chatId }}",
+        "text": "📦 *DOSSIER COMPLET GÉNÉRÉ*\n\n📄 Marché: {{ $json.marche_reference }} - {{ $json.marche_title }}\n👤 Client: {{ $json.client_name }}\n\n✅ Documents générés (8) :\n1. DC1 - Demande Participation\n2. DC2 - Déclaration Sur Honneur\n3. BPU - Bordereau Prix Unitaires\n4. MT - Mémoire Technique\n5. CTF - Capacités Techniques & Financières\n6. ATT_CNPS - Modèle demande attestation\n7. ATT_FISC - Modèle demande attestation fiscale\n8. LETTRE - Lettre de Soumission\n\n📁 Disponibles sur le portail client + ZIP téléchargeable\n⏰ Échéance dépôt: {{ $json.marche_deadline }} ({{ $json.marche_days_left }} jours)\n\n🎯 Prochaine étape: Client complète pièces manquantes + signature + dépôt",
+        "parseMode": "Markdown"
+      },
+      "id": "13",
+      "name": "Notif Telegram + Email Client",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1500, 500],
+      "credentials": { "telegramApi": "Telegram Bot" }
+    }
+  ],
+  "connections": {
+    "Webhook Génération": {
+      "main": [[{"node": "Charger Données Complètes", "type": "main", "index": 0}]]
+    },
+    "Charger Données Complètes": {
+      "main": [[{"node": "Préparer Données Templates", "type": "main", "index": 0}]]
+    },
+    "Préparer Données Templates": {
+      "main": [
+        [{"node": "Générer DC1 - Demande Participation", "type": "main", "index": 0}],
+        [{"node": "Générer DC2 - Déclaration Sur Honneur", "type": "main", "index": 0}],
+        [{"node": "Générer BPU - Bordereau Prix Unitaires", "type": "main", "index": 0}],
+        [{"node": "Générer Mémoire Technique", "type": "main", "index": 0}],
+        [{"node": "Générer Capacités Tech/Fin", "type": "main", "index": 0}],
+        [{"node": "Générer Attestation CNPS (modèle demande)", "type": "main", "index": 0}],
+        [{"node": "Générer Attestation Fiscale (modèle demande)", "type": "main", "index": 0}],
+        [{"node": "Générer Lettre Soumission", "type": "main", "index": 0}]
+      ]
+    },
+    "Générer DC1 - Demande Participation": {
+      "main": [[{"node": "Consolider Fichiers", "type": "main", "index": 0}]]
+    },
+    "Générer DC2 - Déclaration Sur Honneur": {
+      "main": [[{"node": "Consolider Fichiers", "type": "main", "index": 0}]]
+    },
+    "Générer BPU - Bordereau Prix Unitaires": {
+      "main": [[{"node": "Consolider Fichiers", "type": "main", "index": 0}]]
+    },
+    "Générer Mémoire Technique": {
+      "main": [[{"node": "Consolider Fichiers", "type": "main", "index": 0}]]
+    },
+    "Générer Capacités Tech/Fin": {
+      "main": [[{"node": "Consolider Fichiers", "type": "main", "index": 0}]]
+    },
+    "Générer Attestation CNPS (modèle demande)": {
+      "main": [[{"node": "Consolider Fichiers", "type": "main", "index": 0}]]
+    },
+    "Générer Attestation Fiscale (modèle demande)": {
+      "main": [[{"node": "Consolider Fichiers", "type": "main", "index": 0}]]
+    },
+    "Générer Lettre Soumission": {
+      "main": [[{"node": "Consolider Fichiers", "type": "main", "index": 0}]]
+    },
+    "Consolider Fichiers": {
+      "main": [[{"node": "Notif Telegram + Email Client", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "id": "3"
+}

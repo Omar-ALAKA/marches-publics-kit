@@ -1,0 +1,123 @@
+{
+  "name": "Résultats Marchés - Analyse Gains & Facturation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "declare-result",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook Résultat (Client/Portail)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "marches_detectes",
+        "columns": ["status", "result_date", "result_amount", "result_notes"],
+        "options": {
+          "where": "id = {{ $json.marche_id }}"
+        }
+      },
+      "id": "2",
+      "name": "Update Marché Résultat",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.1,
+      "position": [500, 300],
+      "credentials": { "postgres": "Proxmox Postgres" }
+    },
+    {
+      "parameters": {
+        "functionCode": "const marche = items[0].json;\nconst result = $json; // {marche_id, status: 'gagne'|'perdu'|'annule', amount?, notes?}\n\nif (result.status !== 'gagne') {\n  return [{json: {...marche, ...result, fee: 0, invoice: null}]};\n}\n\n// CALCUL SUCCESS FEE\nconst feeRate = 0.01; // 1%\nconst feeAmount = Math.round(marche.parsed_amount * feeRate);\nconst feeMin = 500000; // 500k minimum\nconst feeMax = 10000000; // 10M maximum\nconst finalFee = Math.max(feeMin, Math.min(feeMax, feeAmount));\n\nconst invoiceNumber = `FEE-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;\nconst dueDate = new Date(Date.now() + 30*24*60*60*1000);\n\n// Créer facture\nconst invoice = {\n  number: invoiceNumber,\n  date: new Date().toISOString().split('T')[0],\n  dueDate: dueDate.toISOString().split('T')[0],\n  clientId: marche.client_id,\n  clientName: marche.company_name,\n  marcheReference: marche.reference,\n  marcheTitle: marche.title,\n  marcheAmount: marche.parsed_amount,\n  feeRate: feeRate * 100,\n  feeAmount: finalFee,\n  status: 'emise',\n  description: `Success Fee 1% (min 500k, max 10M) - Marché ${marche.reference}: ${marche.title}`\n};\n\nreturn [{json: {...marche, ...result, fee: finalFee, invoice}}];"
+      },
+      "id": "3",
+      "name": "Calculer Success Fee & Générer Facture",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "invoices",
+        "columns": [
+          "number", "date", "due_date", "client_id", "client_name",
+          "marche_reference", "marche_title", "marche_amount",
+          "fee_rate", "fee_amount", "status", "description"
+        ],
+        "returnFields": ["id"]
+      },
+      "id": "4",
+      "name": "Save Facture",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.1,
+      "position": [1000, 200],
+      "credentials": { "postgres": "Proxmox Postgres" }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "generate",
+        "template": "templates/Facture_Success_Fee.docx",
+        "outputFileName": "Facture_{{ $json.invoice.number }}.docx",
+        "data": "={{ $json.invoice }}"
+      },
+      "id": "5",
+      "name": "Générer Facture PDF/Docx",
+      "type": "n8n-nodes-base.docxtemplater",
+      "typeVersion": 1,
+      "position": [1000, 400]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $credentials.telegramBot.chatId }}",
+        "text": "🏆 *MARCHÉ GAGNÉ - FACTURE ÉMISE*\n\n📄 {{ $json.marche_title }}\n🔢 {{ $json.marche_reference }}\n👤 {{ $json.client_name }}\n💰 Montant marché: {{ $json.marche_amount?.toLocaleString() }} FCFA\n💵 **Success Fee (1%): {{ $json.fee?.toLocaleString() }} FCFA**\n📅 Facture: {{ $json.invoice.number }} - Échéance: {{ $json.invoice.dueDate }}\n\n✅ Facture générée & envoyée au client\n📊 Dashboard mis à jour",
+        "parseMode": "Markdown"
+      },
+      "id": "6",
+      "name": "Notif Telegram Gain",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1250, 300],
+      "credentials": { "telegramApi": "Telegram Bot" }
+    },
+    {
+      "parameters": {
+        "fromEmail": "facturation@votredomaine.com",
+        "toEmail": "={{ $json.client_email }}",
+        "subject": "={{ `Facture Success Fee - ${$json.invoice.number} - Marché ${$json.marche_reference}` }}",
+        "text": "={{ `Bonjour,\n\nSuite à l\\'attribution du marché ${$json.marche_reference} (${$json.marche_title}), veuillez trouver ci-joint la facture de success fee (1% du montant, min 500k FCFA, max 10M FCFA).\n\nMontant: ${$json.fee_amount?.toLocaleString()} FCFA\nÉchéance: ${$json.invoice.dueDate}\n\nCordialement,\nVotre Partenaire Marchés Publics` }}",
+        "options": {
+          "attachments": [{ "fileName": "Facture_{{ $json.invoice.number }}.docx", "content": "={{ $binary.data }}" }]
+        }
+      },
+      "id": "7",
+      "name": "Email Facture Client",
+      "type": "n8n-nodes-base.sendEmail",
+      "typeVersion": 1,
+      "position": [1250, 450],
+      "credentials": { "smtp": "SMTP Brevo/SendGrid" }
+    }
+  ],
+  "connections": {
+    "Webhook Résultat": {
+      "main": [[{"node": "Update Marché Résultat", "type": "main", "index": 0}]]
+    },
+    "Update Marché Résultat": {
+      "main": [[{"node": "Calculer Success Fee & Générer Facture", "type": "main", "index": 0}]]
+    },
+    "Calculer Success Fee & Générer Facture": {
+      "main": [
+        [{"node": "Save Facture", "type": "main", "index": 0}],
+        [{"node": "Générer Facture PDF/Docx", "type": "main", "index": 0}],
+        [{"node": "Notif Telegram Gain", "type": "main", "index": 0}],
+        [{"node": "Email Facture Client", "type": "main", "index": 0}]
+      ]
+    }
+  },
+  "active": false,
+  "id": "5"
+}

@@ -1,0 +1,25 @@
+[En-tête : {{client_name}} - DEMANDE D'ATTESTATION FISCALE]
+
+À l'attention du Chef du Centre des Impôts de {{client_tax_center}}
+Service Attestations
+
+Objet : Demande d'attestation fiscale (IRPP/IUTS/TVA) pour appel d'offres {{marche_reference}}
+
+Monsieur le Chef de Centre,
+
+La société {{client_name}}, identifiée à l'IFU {{client_ifu}}, relevant de votre centre,
+solicite la délivrance des attestations fiscales suivantes :
+- Attestation de régularité IRPP/IUTS
+- Attestation de régularité TVA (si assujetti)
+
+en vue de sa participation à l'appel d'offres N° {{marche_reference}}.
+
+Ces attestations sont requises dans le cadre de la constitution du dossier de candidature.
+
+Nous vous prions d'agréer, Monsieur le Chef de Centre, l'expression de nos salutations distinguées.
+
+Fait à {{client_address}}, le {{date_jour}}
+
+{{rep_name}}
+{{rep_title}}
+[Cachet société]

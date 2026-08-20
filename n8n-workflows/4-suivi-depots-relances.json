@@ -1,0 +1,112 @@
+{
+  "name": "Suivi Dépôts & Relances Automatiques",
+  "nodes": [
+    {
+      "parameters": {
+        "cronExpression": "0 9 * * 1-5",
+        "timezone": "Africa/Lome"
+      },
+      "id": "1",
+      "name": "Quotidien 9h - Check Dépôts",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "marches_detectes m\nJOIN qualifications q ON q.marche_id = m.id\nJOIN clients c ON c.id = q.client_id",
+        "columns": ["m.*", "q.*", "c.*"],
+        "options": {
+          "where": "m.status IN ('qualifie', 'dossier_genere', 'depose') AND m.parsed_deadline >= CURRENT_DATE"
+        }
+      },
+      "id": "2",
+      "name": "Charger Marchés Actifs",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.1,
+      "position": [500, 300],
+      "credentials": { "postgres": "Proxmox Postgres" }
+    },
+    {
+      "parameters": {
+        "functionCode": "const today = new Date();\nconst alerts = [];\n\nitems.forEach(item => {\n  const marche = item.json;\n  const deadline = new Date(marche.parsed_deadline);\n  const daysLeft = Math.ceil((deadline - today) / (1000*60*60*24));\n  \n  // Alerte J-7, J-3, J-1, JOUR J\n  if ([7, 3, 1, 0].includes(daysLeft)) {\n    let urgency = '';\n    if (daysLeft === 0) urgency = '🔴 AUJOURD\\'HUI - DÉPÔT OBLIGATOIRE';\n    else if (daysLeft === 1) urgency = '🟠 DEMAIN - Dernier jour';\n    else if (daysLeft === 3) urgency = '🟡 J-3 - Finaliser dossier';\n    else urgency = '🔵 J-7 - Préparer dépôt';\n    \n    alerts.push({\n      ...marche,\n      daysLeft,\n      urgency,\n      message: `${urgency}\\n\\n📄 ${marche.title}\\n💰 ${marche.parsed_amount?.toLocaleString()} FCFA\\n👤 ${marche.company_name}\\n📋 Statut: ${marche.status}\\n\\nAction requise: ${daysLeft <= 1 ? 'DÉPOSER MAINTENANT' : 'Vérifier complétude + signer'}`\n    });\n  }\n  \n  // Alerte retard dépot\n  if (daysLeft < 0 && marche.status !== 'depose' && marche.status !== 'gagne' && marche.status !== 'perdu') {\n    alerts.push({\n      ...marche,\n      daysLeft,\n      urgency: '🔴 RETARD - ÉCHÉANCE DÉPASSÉE',\n      message: `⚠️ ÉCHÉANCE DÉPASSÉE DE ${Math.abs(daysLeft)} JOURS\\n\\n📄 ${marche.title}\\n👤 ${marche.company_name}\\n📋 Statut: ${marche.status}\\n\\nAction: Marquer 'perdu' ou justifier`\n    });\n  }\n});\n\nreturn alerts.map(a => ({json: a}));"
+      },
+      "id": "3",
+      "name": "Calculer Alertes & Relances",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [{ "value1": "={{ $json.length > 0 }}", "operation": "true" }]
+        }
+      },
+      "id": "4",
+      "name": "Alertes à envoyer ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $credentials.telegramBot.chatId }}",
+        "text": "={{ $json.message }}",
+        "parseMode": "Markdown"
+      },
+      "id": "5",
+      "name": "Telegram Alerte (Toi)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1250, 200],
+      "credentials": { "telegramApi": "Telegram Bot" }
+    },
+    {
+      "parameters": {
+        "fromEmail": "alertes@votredomaine.com",
+        "toEmail": "={{ $json.client_email }}",
+        "subject": "={{ `⏰ ${$json.urgency} - ${$json.marche_reference}` }}",
+        "text": "={{ $json.message }}",
+        "options": {}
+      },
+      "id": "6",
+      "name": "Email Client (Relance)",
+      "type": "n8n-nodes-base.sendEmail",
+      "typeVersion": 1,
+      "position": [1250, 400],
+      "credentials": { "smtp": "SMTP Brevo/SendGrid" }
+    },
+    {
+      "parameters": {
+        "functionCode": "// WhatsApp via Twilio ou API non-officielle\n// Placeholder - implémenter selon ton provider\nconsole.log('WhatsApp to:', $json.client_phone, $json.message);\nreturn items;"
+      },
+      "id": "7",
+      "name": "WhatsApp Client (Optionnel)",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1250, 500]
+    }
+  ],
+  "connections": {
+    "Quotidien 9h - Check Dépôts": {
+      "main": [[{"node": "Charger Marchés Actifs", "type": "main", "index": 0}]]
+    },
+    "Charger Marchés Actifs": {
+      "main": [[{"node": "Calculer Alertes & Relances", "type": "main", "index": 0}]]
+    },
+    "Calculer Alertes & Relances": {
+      "main": [[{"node": "Alertes à envoyer ?", "type": "main", "index": 0}]]
+    },
+    "Alertes à envoyer ?": {
+      "main": [
+        [{"node": "Telegram Alerte (Toi)", "type": "main", "index": 0}],
+        [{"node": "Email Client (Relance)", "type": "main", "index": 0}],
+        [{"node": "WhatsApp Client (Optionnel)", "type": "main", "index": 0}]
+      ]
+    }
+  },
+  "active": false,
+  "id": "4"
+}

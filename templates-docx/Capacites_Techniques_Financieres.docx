@@ -1,0 +1,31 @@
+[En-tête : CAPACITÉS TECHNIQUES ET FINANCIÈRES - Marché {{marche_reference}}]
+
+A. CAPACITÉS FINANCIÈRES (3 derniers exercices)
+{{client_ca_3ans}}
+
+Chiffre d'affaires moyen annuel : {{client_avg_ca}} FCFA
+Capacité de financement propre : {{client_own_funds}} FCFA
+Lignes de crédit confirmées : {{client_credit_lines}} FCFA
+Attestation bancaire de capacité : [Jointe / À fournir]
+
+B. CAPACITÉS TECHNIQUES - RÉFÉRENCES SIMILAIRES (3-5 ans)
+{{client_refs}}
+
+C. PERSONNEL CLÉ DISPONIBLE
+{#key_staff}
+- {{name}} : {{position}} - {{experience}} ans exp. - {{diploma}} - {{certifications}}
+  Disponibilité : {{availability}}% - CV joint
+{/key_staff}
+
+D. MATÉRIEL ET ÉQUIPEMENTS PROPRES
+{#equipment}
+- {{name}} : {{specs}} - État : {{condition}} - Disponibilité : {{availability}}
+{/equipment}
+
+E. CERTIFICATIONS ET AGRÉMENTS
+- ISO 9001 : {{iso_9001_status}}
+- ISO 14001 : {{iso_14001_status}}
+- ISO 45001 : {{iso_45001_status}}
+- Autres : {{other_certs}}
+
+{{rep_name}} - {{date_jour}}

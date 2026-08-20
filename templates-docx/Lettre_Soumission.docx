@@ -1,0 +1,30 @@
+[En-tête : {{client_name}} - LETTRE DE SOUMISSION]
+
+Objet : Soumission pour l'appel d'offres N° {{marche_reference}}
+
+Monsieur le Président de la Commission d'Appel d'Offres,
+
+Nous avons l'honneur de vous remettre notre offre pour l'appel d'offres N° {{marche_reference}} 
+intitulé « {{marche_title}} », conformément au dossier d'appel d'offres que nous avons 
+pris connaissance dans son intégralité.
+
+Notre offre comprend l'ensemble des pièces requises :
+- Pièces administratives (DC1, DC2, attestations, licences)
+- Offre technique (Mémoire technique, capacités, planning)
+- Offre financière (Bordereau des prix unitaires)
+
+Le montant total de notre offre s'élève à {{marche_amount}} TTC.
+
+Notre offre reste valable pendant 90 jours à compter de la date limite de dépôt des plis.
+
+Nous nous engageons, en cas d'attribution, à signer le marché dans les délais prescrits 
+et à constituer les garanties exigées (caution de bonne exécution, retenue de garantie).
+
+En vous remerciant de l'attention portée à notre candidature, nous vous prions d'agréer, 
+Monsieur le Président, l'expression de nos salutations distinguées.
+
+Fait à {{client_address}}, le {{date_jour}}
+
+{{rep_name}}
+{{rep_title}}
+[Cachet + Signature]

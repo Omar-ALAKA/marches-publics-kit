@@ -1,0 +1,105 @@
+{
+  "name": "Qualification Marché - Checklist & Score Final",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "qualify-marche",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook Qualification (depuis dashboard/client)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "marches_detectes",
+        "columns": ["*"],
+        "options": {
+          "where": "id = {{ $json.marche_id }}"
+        }
+      },
+      "id": "2",
+      "name": "Charger Marché",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.1,
+      "position": [500, 300],
+      "credentials": { "postgres": "Proxmox Postgres" }
+    },
+    {
+      "parameters": {
+        "functionCode": "const marche = items[0].json;\nconst client = items[1].json;\n\nconst checklist = [\n  {id: 'RCCM', label: 'Registre Commerce (RCCM) valide', required: true, autoCheck: true},\n  {id: 'IFU', label: 'Identifiant Fiscal Unique (IFU)', required: true, autoCheck: true},\n  {id: 'CNPS', label: 'Attestation CNPS à jour (< 3 mois)', required: true, autoCheck: true},\n  {id: 'IMPOTS', label: 'Attestation Fiscale (IRPP/IUTS/TVA) à jour', required: true, autoCheck: true},\n  {id: 'LICENCE', label: 'Licence/Patente en cours de validité', required: true, autoCheck: true},\n  {id: 'ASSURANCE', label: 'Attestation Assurance Responsabilité Civile', required: true, autoCheck: false},\n  {id: 'CAPACITE_TECH', label: 'Références techniques similaires (3 ans)', required: true, autoCheck: false},\n  {id: 'CAPACITE_FIN', label: 'Capacité financière (CA 3 ans, attestation banque)', required: true, autoCheck: false},\n  {id: 'PERSONNEL', label: 'Personnel clé CV + diplômes', required: false, autoCheck: false},\n  {id: 'MATERIEL', label: 'Matériel/Équipements disponibles', required: false, autoCheck: false},\n  {id: 'SOUS_TRAIT', label: 'Sous-traitants identifiés + accords', required: false, autoCheck: false},\n  {id: 'GARANTIE_SOUM', label: 'Caution de soumission (0.5-1% montant)', required: true, autoCheck: false},\n  {id: 'GARANTIE_EXEC', label: 'Capacité caution bonne exécution (5-10%)', required: true, autoCheck: false},\n  {id: 'RETENUE_GAR', label: 'Acceptation retenue garantie (5-10%)', required: true, autoCheck: false},\n  {id: 'DELAI', label: 'Délai d\\'exécution réaliste vs planning', required: true, autoCheck: false},\n  {id: 'MARGE', label: 'Marge nette cible > 15% après tous coûts', required: true, autoCheck: false}\n];\n\n// Auto-check ce qu'on peut via données client\nchecklist.forEach(c => {\n  if (c.autoCheck && client[c.id.toLowerCase()]) {\n    c.status = 'ok';\n    c.evidence = client[c.id.toLowerCase()];\n  } else {\n    c.status = 'pending';\n  }\n});\n\nconst completionRate = checklist.filter(c => c.status === 'ok').length / checklist.length * 100;\nconst criticalMissing = checklist.filter(c => c.required && c.status === 'pending').length;\n\nlet decision = 'GO';\nlet decisionReason = '';\nif (criticalMissing > 3) { decision = 'NO-GO'; decisionReason = `${criticalMissing} pièces critiques manquantes`; }\nelse if (completionRate < 60) { decision = 'CONDITIONNEL'; decisionReason = `Taux complétude ${completionRate.toFixed(0)}%`; }\nelse if (marche.parsedAmount > client.maxCapacity) { decision = 'CONDITIONNEL'; decisionReason = `Montant > capacité financière déclarée`; }\n\nreturn [{\n  json: {\n    marche,\n    client,\n    checklist,\n    completionRate,\n    criticalMissing,\n    decision,\n    decisionReason,\n    qualifiedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "3",
+      "name": "Générer Checklist & Décision",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "qualifications",
+        "columns": [
+          "marche_id", "client_id", "checklist_json", "completion_rate",
+          "critical_missing", "decision", "decision_reason", "qualified_at"
+        ],
+        "returnFields": ["id"]
+      },
+      "id": "4",
+      "name": "Save Qualification",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.1,
+      "position": [1000, 200],
+      "credentials": { "postgres": "Proxmox Postgres" }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "marches_detectes",
+        "columns": ["status", "qualification_id"],
+        "options": {
+          "where": "id = {{ $json.marche.id }}"
+        }
+      },
+      "id": "5",
+      "name": "Update Marché Status",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.1,
+      "position": [1000, 400],
+      "credentials": { "postgres": "Proxmox Postgres" }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $credentials.telegramBot.chatId }}",
+        "text": "📋 *QUALIFICATION TERMINÉE* - {{ $json.decision }}\n\n📄 Marché: {{ $json.marche.title }}\n💰 {{ $json.marche.parsedAmount }} FCFA | 📅 {{ $json.marche.parsedDeadline }}\n👤 Client: {{ $json.client.company_name }}\n\n✅ Complétude: {{ $json.completionRate.toFixed(0) }}%\n❌ Critiques manquantes: {{ $json.criticalMissing }}\n\n🎯 *Décision: {{ $json.decision }}*\n{{ $json.decisionReason ? `📝 ${$json.decisionReason}` : '' }}\n\n{{ $json.decision === 'GO' ? '🚀 GÉNÉRER DOSSIER COMPLET' : $json.decision === 'CONDITIONNEL' ? '⚠️ Compléter pièces manquantes' : '🛑 Ne pas bidonner' }}"
+      },
+      "id": "6",
+      "name": "Notif Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1250, 300],
+      "credentials": { "telegramApi": "Telegram Bot" }
+    }
+  ],
+  "connections": {
+    "Webhook Qualification": {
+      "main": [[{"node": "Charger Marché", "type": "main", "index": 0}]]
+    },
+    "Charger Marché": {
+      "main": [[{"node": "Générer Checklist & Décision", "type": "main", "index": 0}]]
+    },
+    "Générer Checklist & Décision": {
+      "main": [
+        [{"node": "Save Qualification", "type": "main", "index": 0}],
+        [{"node": "Update Marché Status", "type": "main", "index": 0}],
+        [{"node": "Notif Telegram", "type": "main", "index": 0}]
+      ]
+    }
+  },
+  "active": false,
+  "id": "2"
+}

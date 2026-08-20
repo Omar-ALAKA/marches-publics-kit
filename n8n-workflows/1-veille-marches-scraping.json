@@ -1,0 +1,274 @@
+{
+  "name": "Veille Marchés - Scraping Quotidien",
+  "nodes": [
+    {
+      "parameters": {
+        "cronExpression": "0 6 * * 1-5",
+        "timezone": "Africa/Lome"
+      },
+      "id": "1",
+      "name": "Déclencheur Quotidien 6h",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://www.marchespublics.tg/avis-appel-offres",
+        "options": {
+          "headers": {
+            "User-Agent": "Mozilla/5.0 (compatible; MarchBot/1.0)"
+          }
+        }
+      },
+      "id": "2",
+      "name": "Marchés Publics TG",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [500, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://www.marchespublics.sn/recherche-avancee",
+        "options": {
+          "headers": {
+            "User-Agent": "Mozilla/5.0 (compatible; MarchBot/1.0)"
+          }
+        }
+      },
+      "id": "3",
+      "name": "Marchés Publics SN",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://www.dgmp.ci/avis-appel-offres",
+        "options": {
+          "headers": {
+            "User-Agent": "Mozilla/5.0 (compatible; MarchBot/1.0)"
+          }
+        }
+      },
+      "id": "4",
+      "name": "Marchés Publics CI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [500, 400]
+    },
+    {
+      "parameters": {
+        "url": "https://www.marchespublics.bf/avis",
+        "options": {
+          "headers": {
+            "User-Agent": "Mozilla/5.0 (compatible; MarchBot/1.0)"
+          }
+        }
+      },
+      "id": "5",
+      "name": "Marchés Publics BF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [500, 500]
+    },
+    {
+      "parameters": {
+        "url": "https://www.marchespublics.ml/avis",
+        "options": {
+          "headers": {
+            "User-Agent": "Mozilla/5.0 (compatible; MarchBot/1.0)"
+          }
+        }
+      },
+      "id": "6",
+      "name": "Marchés Publics ML",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [500, 600]
+    },
+    {
+      "parameters": {
+        "url": "https://www.boad.org/appels-offres/",
+        "options": {
+          "headers": {
+            "User-Agent": "Mozilla/5.0 (compatible; MarchBot/1.0)"
+          }
+        }
+      },
+      "id": "7",
+      "name": "BOAD / BCEAO",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [500, 700]
+    },
+    {
+      "parameters": {
+        "url": "https://www.sonatel.com/appels-offres",
+        "options": {
+          "headers": {
+            "User-Agent": "Mozilla/5.0 (compatible; MarchBot/1.0)"
+          }
+        }
+      },
+      "id": "8",
+      "name": "Sonatel / Orange / Moov",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [500, 800]
+    },
+    {
+      "parameters": {
+        "url": "https://www.corisbank.net/appels-offres",
+        "options": {
+          "headers": {
+            "User-Agent": "Mozilla/5.0 (compatible; MarchBot/1.0)"
+          }
+        }
+      },
+      "id": "9",
+      "name": "Banques (Coris, Ecobank, Orabank, BIAO)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [500, 900]
+    },
+    {
+      "parameters": {
+        "url": "https://www.undp.org/tenders",
+        "options": {
+          "headers": {
+            "User-Agent": "Mozilla/5.0 (compatible; MarchBot/1.0)"
+          }
+        }
+      },
+      "id": "10",
+      "name": "ONG / Bailleurs (UNDP, Banque Mondiale, AFD, UE)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [500, 1000]
+    },
+    {
+      "parameters": {
+        "functionCode": "const allItems = [];\n\n// Helper: extract from HTML using regex (simplifié - adapter selon structure réelle)\nfunction extractFromHTML(html, source) {\n  const items = [];\n  // Patterns génériques - À ADAPTER par site\n  const patterns = {\n    title: /<h3[^>]*class=\"[^\"]*title[^\"]*\"[^>]*>([^<]+)</gi,\n    reference: /(?:Réf|Ref|N°)[\\s:]*([A-Z0-9\\-\\/]+)/gi,\n    deadline: /(?:Date limite|Échéance|Clôture)[\\s:]*([0-9]{1,2}[\\/\\-][0-9]{1,2}[\\/\\-][0-9]{2,4})/gi,\n    amount: /(?:Montant|Budget|Estimation)[\\s:]*([0-9\\s,.]+\\s*(?:FCFA|CFA|XOF|€|EUR))/gi,\n    category: /(?:Catégorie|Secteur|Domaine)[\\s:]*([^<]+)/gi,\n    link: /<a[^>]+href=\"([^\"]+)\"[^>]*>.*?(?:Voir|Détail|Dossier)/gi\n  };\n\n  let match;\n  while ((match = patterns.title.exec(html)) !== null) {\n    const idx = items.length;\n    items.push({\n      source,\n      title: match[1].trim(),\n      reference: '',\n      deadline: '',\n      amount: '',\n      category: '',\n      link: '',\n      detectedAt: new Date().toISOString(),\n      rawHtml: html.substring(match.index, match.index + 2000)\n    });\n  }\n  // Enrichir chaque item avec autres patterns (simplifié)\n  return items;\n}\n\n// Process each source\nconst sources = [\n  {name: 'TG', data: items[0].json},\n  {name: 'SN', data: items[1].json},\n  {name: 'CI', data: items[2].json},\n  {name: 'BF', data: items[3].json},\n  {name: 'ML', data: items[4].json},\n  {name: 'BOAD', data: items[5].json},\n  {name: 'TELCO', data: items[6].json},\n  {name: 'BANKS', data: items[7].json},\n  {name: 'DONORS', data: items[8].json}\n];\n\nsources.forEach(s => {\n  if (s.data?.html) {\n    allItems.push(...extractFromHTML(s.data.html, s.name));\n  } else if (s.data?.data) {\n    // API JSON response\n    allItems.push(...s.data.data.map(d => ({\n      source: s.name,\n      title: d.title || d.objet || d.libelle,\n      reference: d.reference || d.numero || d.ref,\n      deadline: d.dateLimite || d.echeance || d.cloture,\n      amount: d.montant || d.budget || d.estimation,\n      category: d.categorie || d.secteur || d.domaine,\n      link: d.url || d.lien || d.detailUrl,\n      detectedAt: new Date().toISOString()\n    })));\n  }\n});\n\nreturn allItems.map(item => ({json: item}));"
+      },
+      "id": "11",
+      "name": "Parse & Normalize",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [750, 550]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.title }}",
+              "operation": "notEmpty"
+            },
+            {
+              "value1": "={{ $json.deadline }}",
+              "operation": "notEmpty"
+            }
+          ]
+        }
+      },
+      "id": "12",
+      "name": "Filtrer Valides",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1000, 550]
+    },
+    {
+      "parameters": {
+        "functionCode": "const keywords = [\n  // Tes secteurs cibles - ADAPTER\n  'informatique', 'numérique', 'digital', 'logiciel', 'développement',\n  'télécom', 'réseau', 'fibre', 'connectivité', 'infrastructure',\n  'énergie', 'solaire', 'électrique', 'groupe électrogène',\n  'construction', 'bâtiment', 'travaux', 'génie civil', 'voirie',\n  'fourniture', 'équipement', 'matériel', 'fournitures bureau',\n  'service', 'prestation', 'conseil', 'formation', 'maintenance',\n  'sécurité', 'surveillance', 'gardiennage', 'incendie',\n  'nettoyage', 'hygiène', 'environnement', 'déchet',\n  'transport', 'logistique', 'livraison', 'fret',\n  'santé', 'médical', 'pharmacie', 'laboratoire', 'hôpital',\n  'éducation', 'université', 'école', 'formation professionnelle',\n  'agricole', 'intrant', 'engrais', 'semence', 'machinisme',\n  'eau', 'assainissement', 'forage', 'adduction',\n  'banque', 'finance', 'assurance', 'microfinance',\n  'état', 'ministère', 'direction', 'agence', 'office', 'commune'\n];\n\nconst excludeKeywords = [\n  'architecte', 'maître d\\'œuvre', 'bureau d\\'études', 'géotechnique',\n  'topographe', 'arpenteur', 'notaire', 'huissier', 'avocat',\n  'expertise comptable', 'commissaire aux comptes', 'audit financier'\n];\n\nconst today = new Date();\nconst thirtyDays = new Date(today.getTime() + 30*24*60*60*1000);\n\nreturn items.filter(item => {\n  const text = (item.json.title + ' ' + (item.json.category || '')).toLowerCase();\n  \n  // Exclusion\n  if (excludeKeywords.some(k => text.includes(k))) return false;\n  \n  // Inclusion (au moins 1 mot-clé)\n  if (!keywords.some(k => text.includes(k))) return false;\n  \n  // Échéance > aujourd'hui et < 30 jours\n  let deadline;\n  try {\n    const parts = item.json.deadline.split(/[\\/\\-]/);\n    if (parts.length === 3) {\n      deadline = new Date(parts[2], parts[1]-1, parts[0]);\n    }\n  } catch (e) { return false; }\n  \n  if (!deadline || deadline < today || deadline > thirtyDays) return false;\n  \n  // Montant > 5M FCFA (seuil intéressant)\n  let amount = 0;\n  if (item.json.amount) {\n    const match = item.json.amount.match(/([0-9\\s,.]+)/);\n    if (match) amount = parseFloat(match[1].replace(/[\\s,]/g, '').replace('.', ''));\n    if (item.json.amount.includes('M') || item.json.amount.includes('milliard')) amount *= 1000000;\n    else if (item.json.amount.includes('k') || item.json.amount.includes('million')) amount *= 1000;\n  }\n  if (amount < 5000000) return false;\n  \n  item.json.parsedAmount = amount;\n  item.json.parsedDeadline = deadline.toISOString().split('T')[0];\n  item.json.score = calculateScore(item.json);\n  \n  return true;\n});\n\nfunction calculateScore(item) {\n  let score = 50;\n  const text = (item.title + ' ' + (item.category || '')).toLowerCase();\n  \n  // Bonus secteurs cœur de cible\n  if (text.includes('informatique') || text.includes('numérique') || text.includes('digital')) score += 30;\n  if (text.includes('énergie') || text.includes('solaire')) score += 25;\n  if (text.includes('construction') || text.includes('travaux')) score += 20;\n  \n  // Bonus montant\n  if (item.parsedAmount > 100000000) score += 20;\n  else if (item.parsedAmount > 50000000) score += 15;\n  else if (item.parsedAmount > 20000000) score += 10;\n  \n  // Bonus échéance proche (urgent = moins de concurrence)\n  const daysLeft = (new Date(item.parsedDeadline) - new Date()) / (1000*60*60*24);\n  if (daysLeft < 10) score += 15;\n  else if (daysLeft < 20) score += 10;\n  \n  // Bonus source fiable\n  if (['TG', 'SN', 'CI', 'BOAD'].includes(item.source)) score += 10;\n  \n  return Math.min(100, score);\n}"
+      },
+      "id": "13",
+      "name": "Scoring & Filtrage Intelligent",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1250, 450]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "marches_detectes",
+        "columns": [
+          "source", "title", "reference", "deadline", "amount", "category",
+          "link", "detected_at", "parsed_amount", "parsed_deadline", "score",
+          "status", "client_id", "created_at"
+        ],
+        "returnFields": ["id"]
+      },
+      "id": "14",
+      "name": "Save PostgreSQL",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.1,
+      "position": [1500, 450],
+      "credentials": {
+        "postgres": "Proxmox Postgres"
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $credentials.telegramBot.chatId }}",
+        "text": "🎯 *NOUVEAU MARCHÉ DÉTECTÉ* (Score: {{ $json.score }}/100)\n\n📋 *{{ $json.title }}*\n🔢 Réf: {{ $json.reference || 'N/A' }}\n💰 Montant: {{ $json.amount || 'Non précisé' }} (≈ {{ $json.parsedAmount || 0 }} FCFA)\n📅 Échéance: {{ $json.parsedDeadline }} ({{ Math.ceil((new Date($json.parsedDeadline) - new Date()) / (1000*60*60*24)) }} jours)\n🏷️ Catégorie: {{ $json.category || 'N/A' }}\n🌍 Source: {{ $json.source }}\n🔗 Lien: {{ $json.link || 'Non dispo' }}\n\n---\n👉 Action: {{ $json.score > 75 ? '🔥 PRIORITÉ - Qualifier IMMÉDIATEMENT' : $json.score > 50 ? '⚡ Qualifier cette semaine' : '📋 Surveiller' }}",
+        "parseMode": "Markdown"
+      },
+      "id": "15",
+      "name": "Alert Telegram (Score > 50)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1500, 650],
+      "credentials": {
+        "telegramApi": "Telegram Bot"
+      }
+    }
+  ],
+  "connections": {
+    "Déclencheur Quotidien 6h": {
+      "main": [[{"node": "Marchés Publics TG", "type": "main", "index": 0}]]
+    },
+    "Marchés Publics TG": {
+      "main": [[{"node": "Parse & Normalize", "type": "main", "index": 0}]]
+    },
+    "Marchés Publics SN": {
+      "main": [[{"node": "Parse & Normalize", "type": "main", "index": 1}]]
+    },
+    "Marchés Publics CI": {
+      "main": [[{"node": "Parse & Normalize", "type": "main", "index": 2}]]
+    },
+    "Marchés Publics BF": {
+      "main": [[{"node": "Parse & Normalize", "type": "main", "index": 3}]]
+    },
+    "Marchés Publics ML": {
+      "main": [[{"node": "Parse & Normalize", "type": "main", "index": 4}]]
+    },
+    "BOAD / BCEAO": {
+      "main": [[{"node": "Parse & Normalize", "type": "main", "index": 5}]]
+    },
+    "Sonatel / Orange / Moov": {
+      "main": [[{"node": "Parse & Normalize", "type": "main", "index": 6}]]
+    },
+    "Banques (Coris, Ecobank, Orabank, BIAO)": {
+      "main": [[{"node": "Parse & Normalize", "type": "main", "index": 7}]]
+    },
+    "ONG / Bailleurs (UNDP, Banque Mondiale, AFD, UE)": {
+      "main": [[{"node": "Parse & Normalize", "type": "main", "index": 8}]]
+    },
+    "Parse & Normalize": {
+      "main": [[{"node": "Filtrer Valides", "type": "main", "index": 0}]]
+    },
+    "Filtrer Valides": {
+      "main": [[{"node": "Scoring & Filtrage Intelligent", "type": "main", "index": 0}]]
+    },
+    "Scoring & Filtrage Intelligent": {
+      "main": [
+        [{"node": "Save PostgreSQL", "type": "main", "index": 0}],
+        [{"node": "Alert Telegram (Score > 50)", "type": "main", "index": 0}]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "1"
+}

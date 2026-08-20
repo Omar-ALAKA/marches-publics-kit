@@ -1,0 +1,43 @@
+[En-tête : MÉMOIRE TECHNIQUE - Marché {{marche_reference}}]
+
+1. PRÉSENTATION DE LA SOCIÉTÉ
+   - Raison sociale : {{client_name}}
+   - Forme juridique : {{client_legal_form}}
+   - Capital : {{client_capital}}
+   - Effectif total : {{client_effectif}} dont {{client_tech_staff}} techniciens
+   - Siège : {{client_address}}
+
+2. ORGANISATION PROPOSÉE POUR LE MARCHÉ
+   - Chef de projet : [Nom, CV joint]
+   - Équipe technique : [Noms, profils, CV joints]
+   - Moyens matériels affectés : [Liste équipement]
+   - Sous-traitants éventuels : [Noms, accords joints]
+
+3. MÉTHODOLOGIE D'EXÉCUTION
+   {#methodology_steps}
+   - Phase {{step_number}} : {{step_name}} ({{step_duration}} jours)
+     * Objectif : {{step_objective}}
+     * Livrables : {{step_deliverables}}
+     * Moyens : {{step_resources}}
+   {/methodology_steps}
+
+4. PLANNING PRÉVISIONNEL (Gantt simplifié)
+   - Date de début : {{date_depot_limite}} + 15j (notification)
+   - Date de fin : {{date_depot_limite}} + {{execution_days}} jours
+   - Jalons clés : [Liste]
+
+5. GESTION QUALITÉ / SÉCURITÉ / ENVIRONNEMENT
+   - Démarche qualité : [Description]
+   - Mesures sécurité : [Description]
+   - Respect environnemental : [Description]
+
+6. MOYENS MATÉRIELS ET LOGISTIQUES
+   {{client_refs}}
+
+7. ENGAGEMENTS
+   - Respect délais contractuels
+   - Conformité spécifications techniques
+   - Reporting régulier (hebdomadaire)
+   - Garantie satisfait ou refait
+
+{{rep_name}} - {{date_jour}}

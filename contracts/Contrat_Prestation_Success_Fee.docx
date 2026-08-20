@@ -1,0 +1,142 @@
+# Contrat de Partenariat - Success Fee Marchés Publics
+
+**ENTRE :**
+
+**LE PRESTATAIRE** : [Votre Nom / Votre Société], immatriculée au RCCM sous le N° [Votre RCCM], IFU [Votre IFU], sise à [Votre Adresse], représentée par [Votre Nom], en qualité de [Votre Titre].
+
+**ET LE CLIENT** : {{client_name}}, société de droit {{client_legal_form}} au capital de {{client_capital}} FCFA, immatriculée au RCCM sous le N° {{client_rcm}}, identifiée à l'IFU {{client_ifu}}, sise à {{client_address}}, représentée par {{rep_name}}, en qualité de {{rep_title}}.
+
+**PRÉAMBULE**
+
+Le Prestataire a développé une expertise et des outils automatisés pour la détection, la qualification, la préparation et le dépôt de dossiers de candidature aux marchés publics et appels d'offres de grands comptes dans la zone UEMOA et au-delà.
+
+Le Client souhaite bénéficier de cette expertise pour augmenter ses chances de remporter des marchés publics adaptés à son secteur d'activité.
+
+**IL EST CONVENU CE QUI SUIT :**
+
+## ARTICLE 1 - OBJET
+
+Le Prestataire s'engage à :
+1. **Veille** : Surveiller les sources de marchés publics (portails officiels UEMOA, sites donneurs d'ordre, ONG, bailleurs) et alerter le Client sur les opportunités pertinentes.
+2. **Qualification** : Analyser l'adéquation entre le marché détecté et les capacités du Client (technique, financière, administrative).
+3. **Génération de dossier** : Produire l'ensemble des pièces administratives, techniques et financières requises (DC1, DC2, Mémoire technique, Bordereau prix, Capacités, Attestations, Lettre de soumission).
+4. **Suivi & Relance** : Assurer le suivi des échéances, relancer le Client pour le dépôt, et déclarer les résultats.
+5. **Facturation** : Émettre la facture de success fee en cas de gain.
+
+Le Client s'engage à :
+1. Fournir les informations et documents nécessaires (attestations, références, capacités).
+2. Valider les dossiers générés avant dépôt.
+3. Déposer les dossiers dans les délais (ou mandater le Prestataire pour le dépôt dématérialisé).
+4. Informer le Prestataire du résultat (attribution / rejet / annulation).
+5. Payer le success fee en cas de gain.
+
+## ARTICLE 2 - MODÈLE FINANCIER : SUCCESS FEE ONLY
+
+**Aucun frais fixe, aucun abonnement, aucune avance.**
+
+Le Client ne paie **UNIQUEMENT en cas de gain** (attribution définitive du marché notifiée).
+
+**Calcul du Success Fee :**
+- **Taux** : 1% du montant TTC du marché attribué
+- **Minimum** : 500 000 FCFA par marché gagné
+- **Maximum** : 10 000 000 FCFA par marché gagné
+- **Paiement** : Sous 30 jours à compter de la notification d'attribution / signature du marché
+
+*Exemple : Marché gagné à 80 000 000 FCFA → Fee = 800 000 FCFA (1%, entre min et max).*
+
+## ARTICLE 3 - OBLIGATIONS DU PRESTATAIRE
+
+3.1 **Meilleurs efforts** : Le Prestataire met en œuvre ses outils, son expertise et son réseau pour maximiser les chances de gain. Il ne garantit pas le gain (décision souveraine du donneur d'ordre).
+
+3.2 **Confidentialité** : Toutes informations transmises par le Client (données financières, techniques, stratégiques) restent strictement confidentielles. Non-divulgation à des tiers sans accord écrit.
+
+3.3 **Qualité des dossiers** : Les dossiers générés respectent les formats réglementaires (OHADA, UEMOA, donneurs d'ordre). Le Prestataire n'est pas responsable des erreurs provenant d'informations inexactes fournies par le Client.
+
+3.4 **Indépendance** : Le Prestataire n'est pas avocat, expert-comptable, ni mandataire officiel. Il fournit un accompagnement technique et administratif. Le Client reste seul responsable de la véracité de sa candidature.
+
+## ARTICLE 4 - OBLIGATIONS DU CLIENT
+
+4.1 **Information exacte** : Le Client garantit l'exactitude, la complétude et la sincérité de toutes informations et documents fournis.
+
+4.2 **Réactivité** : Le Client s'engage à répondre aux demandes de compléments (pièces manquantes, validations) sous 48h ouvrées.
+
+4.3 **Dépôt** : Le Client effectue le dépôt du dossier dans les délais impartis. Tout retard imputable au Client exonère le Prestataire de toute responsabilité.
+
+4.4 **Déclaration de résultat** : Le Client informe le Prestataire du résultat (gain/perte/annulation) sous 5 jours ouvrés suivant la notification.
+
+4.5 **Paiement** : En cas de gain, paiement intégral du success fee sous 30 jours (voir Art. 2).
+
+## ARTICLE 5 - DURÉE & RÉSILIATION
+
+5.1 **Durée** : 12 mois renouvelables par tacite reconduction.
+
+5.2 **Résiliation libre** : Chaque partie peut résilier à tout moment par notification écrite (email avec accusé de réception) avec un préavis de 30 jours.
+
+5.3 **Effets de la résiliation** : Les dossiers en cours (déjà déposés ou en cours de génération) restent couverts par le success fee si gain ultérieur. Aucun remboursement de frais (il n'y en a pas).
+
+## ARTICLE 6 - PROPRIÉTÉ INTELLECTUELLE
+
+6.1 Les outils, workflows, templates, méthodes, algorithmes de scoring, dashboards développés par le Prestataire restent sa propriété exclusive.
+
+6.2 Les dossiers générés pour le Client deviennent la propriété du Client dès paiement du success fee (ou remise si non-gain).
+
+## ARTICLE 7 - RESPONSABILITÉ & LIMITATION
+
+7.1 Le Prestataire n'est tenu qu'à une obligation de moyens, non de résultat (gain du marché).
+
+7.2 Responsabilité plafonnée au montant du success fee du marché concerné (max 10M FCFA).
+
+7.3 Force majeure : Ni l'une ni l'autre des parties n'est responsable des retards dus à cas de force majeure (grèves, catastrophes, pannes internet généralisées, décisions étatiques).
+
+## ARTICLE 8 - DONNÉES PERSONNELLES & RGPD / LOI TOGOLAISE
+
+Conformité à la loi n°2019-014 relative à la protection des données à caractère personnel. Les données sont conservées pendant la durée du contrat + 3 ans pour obligations comptables/fiscales.
+
+## ARTICLE 9 - LOI APPLICABLE & JURIDICTION
+
+Droit togolais applicable. Tout litige non résolu à l'amiable dans les 30 jours relève de la compétence exclusive des tribunaux de Lomé (Togo).
+
+## ARTICLE 10 - SIGNATURES
+
+Fait en deux exemplaires originaux, à Lomé, le {{date_jour}}.
+
+**LE PRESTATAIRE**                                    **LE CLIENT**
+
+[Votre Nom]                                           {{rep_name}}
+[Votre Titre]                                         {{rep_title}}
+[Votre Société]                                       {{client_name}}
+[Cachet + Signature]                                  [Cachet + Signature]
+
+---
+
+**ANNEXE 1 - FICHE CLIENT (À compléter à la signature)**
+
+| Information | Détail |
+|-------------|--------|
+| Raison sociale | {{client_name}} |
+| Forme juridique | {{client_legal_form}} |
+| Capital social | {{client_capital}} FCFA |
+| RCCM | {{client_rcm}} |
+| IFU | {{client_ifu}} |
+| CNPS | {{client_cnps_number}} |
+| Centre Impôts | {{client_tax_center}} |
+| Adresse | {{client_address}} |
+| Téléphone | {{client_phone}} |
+| Email | {{client_email}} |
+| Représentant légal | {{rep_name}} |
+| Titre | {{rep_title}} |
+| Secteur d'activité | {{client_sector}} |
+| Effectif total | {{client_staff_count}} |
+| Effectif technique | {{client_tech_staff_count}} |
+| CA 3 ans (FCFA) | {{client_ca_3ans}} |
+| Fonds propres | {{client_own_funds}} FCFA |
+| Lignes de crédit | {{client_credit_lines}} FCFA |
+| Capacité max | {{client_max_capacity}} FCFA |
+
+**ANNEXE 2 - SECTEURS CIBLES & MOTS-CLÉS (À valider ensemble)**
+
+*Secteurs prioritaires :* [À définir selon expertise client]
+*Mots-clés inclusion :* [Liste]
+*Mots-clés exclusion :* [Liste]
+*Montant minimum :* 5 000 000 FCFA
+*Zone géographique :* Togo, Sénégal, Côte d'Ivoire, Burkina Faso, Mali, BOAD, BCEAO, Grands comptes privés

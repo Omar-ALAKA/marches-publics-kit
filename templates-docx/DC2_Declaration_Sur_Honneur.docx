@@ -1,0 +1,29 @@
+[En-tête : Logo Client + "DÉCLARATION SUR L'HONNEUR"]
+
+Je soussigné(e), {{rep_name}}, {{rep_title}} de la société {{client_name}},
+déclare sur l'honneur que :
+
+1. Notre société n'est pas en état de faillite, de liquidation judiciaire, 
+   de règlement judiciaire ou de toute procédure similaire ;
+
+2. Notre société est à jour de ses obligations fiscales et sociales 
+   (attestations fiscales et CNPS jointes) ;
+
+3. Notre société n'a pas fait l'objet de condamnation pour fraude, 
+   corruption, pratiques collusoires, entente illicite ou tout autre 
+   infraction à la législation en vigueur ;
+
+4. Notre société n'est pas interdite de soumissionner aux marchés publics 
+   par une décision de l'autorité compétente ;
+
+5. Les informations fournies dans le présent dossier sont exactes et sincères ;
+
+6. En cas d'attribution, nous nous engageons à fournir les garanties 
+   exigées (caution de bonne exécution, retenue de garantie) 
+   et à signer le marché dans les délais prescrits.
+
+Fait à {{client_address}}, le {{date_jour}}
+
+{{rep_name}}
+{{rep_title}}
+[Cachet + Signature + Empreinte numérique si requis]
